@@ -10,11 +10,11 @@ env:
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/ci_cd
 
 jobs:
-  test-build:
+  build-and-scan:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Use Node.js 18
@@ -22,19 +22,10 @@ jobs:
         with:
           node-version: 18
 
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test
+      - name: Install dependencies and run tests
+        run: |
+          npm ci
+          npm test
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -45,7 +36,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build image (load locally)
+      - name: Build Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -54,14 +45,14 @@ jobs:
           tags: ${{ env.IMAGE_NAME }}:latest
 
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@v0.28.0  # تحديث الإصدار هنا
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           image-ref: ${{ env.IMAGE_NAME }}:latest
-          format: 'table'      # نتائج على شكل جدول
-          exit-code: '1'       # يجعل الـ workflow يفشل إذا توجد ثغرات حرجة
-          severity: 'CRITICAL' # فقط الثغرات الحرجة
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL'
 
-      - name: Push image to Docker Hub
+      - name: Push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
