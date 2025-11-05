@@ -54,12 +54,12 @@ jobs:
           tags: ${{ env.IMAGE_NAME }}:latest
 
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@v0.1.9
+        uses: aquasecurity/trivy-action@v0.28.0  # تحديث الإصدار هنا
         with:
           image-ref: ${{ env.IMAGE_NAME }}:latest
-          format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL'
+          format: 'table'      # نتائج على شكل جدول
+          exit-code: '1'       # يجعل الـ workflow يفشل إذا توجد ثغرات حرجة
+          severity: 'CRITICAL' # فقط الثغرات الحرجة
 
       - name: Push image to Docker Hub
         uses: docker/build-push-action@v4
